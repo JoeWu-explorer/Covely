@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Covely · 白噪音质感验证</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg: #f6f4ef;
+        --fg: #2a2a2a;
+        --muted: #8a8680;
+        --line: #e6e2da;
+        --accent: #5b6e5a;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+          "Hiragino Sans GB", "Segoe UI", sans-serif;
+        font-weight: 300;
+        -webkit-font-smoothing: antialiased;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 32px;
+        padding: 48px 24px;
+      }
+      header {
+        text-align: center;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 400;
+        letter-spacing: 0.04em;
+        margin: 0 0 6px;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: min(440px, 100%);
+      }
+      .card {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 20px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .card.on {
+        border-color: var(--accent);
+        box-shadow: 0 1px 0 rgba(91, 110, 90, 0.04),
+          0 8px 24px -16px rgba(91, 110, 90, 0.25);
+      }
+      .toggle {
+        width: 40px;
+        height: 24px;
+        border-radius: 999px;
+        background: #d8d4cc;
+        border: none;
+        position: relative;
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.2s;
+      }
+      .toggle::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.2s;
+      }
+      .card.on .toggle { background: var(--accent); }
+      .card.on .toggle::after { transform: translateX(16px); }
+      .label {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .label .name {
+        font-size: 15px;
+        font-weight: 400;
+      }
+      .label .hint {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 110px;
+        height: 2px;
+        background: var(--line);
+        border-radius: 999px;
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px var(--line);
+      }
+      input[type="range"]:disabled::-webkit-slider-thumb {
+        background: #bdb9b1;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+        max-width: 440px;
+        line-height: 1.7;
+      }
+      kbd {
+        background: #efece5;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 11px;
+        font-family: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Covely · 白噪音原型</h1>
+      <p>点开关试听，戴耳机听 30 分钟评估质感</p>
+    </header>
+
+    <div class="stack" id="stack">
+      <div class="card" data-id="rain">
+        <button class="toggle" aria-label="切换 雨声"></button>
+        <div class="label">
+          <span class="name">雨声</span>
+          <span class="hint">连绵小雨</span>
+        </div>
+        <input type="range" min="0" max="100" value="60" />
+      </div>
+
+      <div class="card" data-id="ocean">
+        <button class="toggle" aria-label="切换 海浪"></button>
+        <div class="label">
+          <span class="name">海浪</span>
+          <span class="hint">缓慢起伏的潮汐</span>
+        </div>
+        <input type="range" min="0" max="100" value="55" />
+      </div>
+
+      <div class="card" data-id="cafe">
+        <button class="toggle" aria-label="切换 咖啡厅">
+        </button>
+        <div class="label">
+          <span class="name">咖啡厅</span>
+          <span class="hint">远处的低语与杯盘</span>
+        </div>
+        <input type="range" min="0" max="100" value="50" />
+      </div>
+    </div>
+
+    <footer>
+      首次点击会启动 AudioContext。三种声音可叠加，<kbd>音量为 0</kbd> 仍占用 CPU——
+      关闭开关才会停用对应声音节点。
+    </footer>
+
+    <script type="module" src="./noise.js"></script>
+  </body>
+</html>
