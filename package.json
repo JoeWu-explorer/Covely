@@ -1,0 +1,18 @@
+{
+  "name": "covely",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A quiet new-tab Chrome extension: white-noise companion + ephemeral idea capture for deep work.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:ext": "node build.mjs --target=extension",
+    "build:web": "node build.mjs --target=web",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.2"
+  }
+}

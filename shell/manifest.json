@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Covely",
+  "version": "0.0.1",
+  "description": "把新标签页变成一个安静的工作起点：白噪音陪伴 + 灵感速记。",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "permissions": ["storage"]
+}

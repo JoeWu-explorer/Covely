@@ -148,3 +148,6 @@ vite.config.ts.timestamp-*
 # Build output
 build/
 
+# Raw audio downloads (kept locally for re-transcoding; never committed)
+covely-sounds/
+

@@ -1,0 +1,260 @@
+/* Covely shared stylesheet — used by both extension newtab and web app. */
+
+:root {
+  --bg: #f6f4ef;
+  --fg: #2a2a2a;
+  --muted: #8a8680;
+  --line: #e6e2da;
+  --accent: #5b6e5a;
+  --card-bg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1d1c;
+    --fg: #e8e6e0;
+    --muted: #8e8b84;
+    --line: #2c2d2c;
+    --accent: #8aa28a;
+    --card-bg: #232423;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Hiragino Sans GB", "Segoe UI", sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 100vh;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  padding: 48px 24px;
+}
+
+/* ---------- Clock ---------- */
+
+.clock { text-align: center; }
+.clock-time {
+  font-size: clamp(72px, 14vw, 144px);
+  font-weight: 200;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.clock-date {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Search ---------- */
+
+.search {
+  width: min(520px, 90vw);
+}
+.search-input {
+  width: 100%;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 300;
+  font-family: inherit;
+  background: var(--card-bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-input::placeholder { color: var(--muted); }
+.search-input:focus { border-color: var(--accent); }
+
+/* ---------- Memo ---------- */
+
+.memo {
+  width: min(520px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.memo-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 300;
+  font-family: inherit;
+  background: var(--card-bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s;
+  line-height: 1.6;
+}
+.memo-textarea::placeholder { color: var(--muted); }
+.memo-textarea:focus { border-color: var(--accent); }
+.memo-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.memo-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.memo-btn:hover { background: var(--line); color: var(--fg); }
+.memo-btn[data-state="copied"] { color: var(--accent); }
+
+/* ---------- Noise ---------- */
+
+.noise {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: min(720px, 95vw);
+}
+.noise-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  flex: 1 1 220px;
+  min-width: 200px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.noise-card.on {
+  border-color: var(--accent);
+  box-shadow: 0 1px 0 rgba(91, 110, 90, 0.04),
+    0 8px 24px -16px rgba(91, 110, 90, 0.25);
+}
+.noise-toggle {
+  width: 36px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--line);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+.noise-toggle::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  transition: transform 0.2s;
+}
+.noise-card.on .noise-toggle { background: var(--accent); }
+.noise-card.on .noise-toggle::after { transform: translateX(14px); }
+.noise-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.noise-name { font-size: 14px; }
+.noise-hint { font-size: 11px; color: var(--muted); }
+.noise-card input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80px;
+  height: 2px;
+  background: var(--line);
+  border-radius: 999px;
+  outline: none;
+}
+.noise-card input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--card-bg);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+/* Variant picker — small dots under the card body, only on slots with multiple variants. */
+.noise-card {
+  /* allow variants row to wrap below the main row */
+  row-gap: 8px;
+}
+.noise-variants {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  padding-left: 50px; /* align with label, past the toggle */
+}
+.noise-variant {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--muted);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.noise-variant:hover { border-color: var(--accent); }
+.noise-variant.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.noise-variant::before {
+  content: attr(data-v);
+}
+.noise-variant.on::before { color: var(--card-bg); }
+
+/* ---------- Footer ---------- */
+
+footer {
+  padding: 16px 24px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+footer a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--line);
+}
+footer a:hover { color: var(--fg); border-bottom-color: var(--muted); }
