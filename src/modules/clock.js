@@ -3,14 +3,24 @@
 
 const WEEKDAYS = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
 
+// Greeting by time of day. Each bucket has a couple of calm variants for a
+// little variety; the bucket is chosen by the hour and re-picked only when the
+// clock crosses into a new period (so it never flickers between renders).
+const GREETINGS = /** @type {const} */ ([
+  { until: 5, words: ["夜深了", "愿你安睡"] },
+  { until: 9, words: ["早安", "清晨好"] },
+  { until: 11, words: ["上午好", "专注的上午"] },
+  { until: 13, words: ["午安", "中午好"] },
+  { until: 17, words: ["下午好", "午后好"] },
+  { until: 19, words: ["傍晚好", "黄昏好"] },
+  { until: 23, words: ["晚上好", "夜色温柔"] },
+  { until: 24, words: ["夜深了", "愿你安睡"] },
+]);
+
 /** @param {number} hour */
-function greetingFor(hour) {
-  if (hour < 5) return "夜深了";
-  if (hour < 11) return "早安";
-  if (hour < 14) return "午安";
-  if (hour < 18) return "下午好";
-  if (hour < 22) return "晚上好";
-  return "夜深了";
+function bucketFor(hour) {
+  const i = GREETINGS.findIndex((g) => hour < g.until);
+  return i === -1 ? GREETINGS.length - 1 : i;
 }
 
 /**
@@ -31,11 +41,18 @@ export function mountClock(container) {
   root.append(greeting, time, date);
   container.appendChild(root);
 
+  let curBucket = -1;
   function render() {
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
-    greeting.textContent = greetingFor(now.getHours());
+    // Re-pick a greeting only when we cross into a new time period.
+    const bucket = bucketFor(now.getHours());
+    if (bucket !== curBucket) {
+      curBucket = bucket;
+      const words = GREETINGS[bucket].words;
+      greeting.textContent = words[Math.floor(Math.random() * words.length)];
+    }
     time.textContent = `${hh}:${mm}`;
     date.textContent = `${now.getMonth() + 1}月${now.getDate()}日 ${WEEKDAYS[now.getDay()]}`;
   }
