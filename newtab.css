@@ -30,7 +30,8 @@
     inset 0 -12px 22px -14px rgba(80, 80, 70, 0.08),
     0 6px 16px -8px rgba(60, 65, 50, 0.22),
     0 18px 44px -18px rgba(60, 65, 50, 0.22);
-  /* Liquid-glass flowing highlight intensity (overridden for night). */
+  /* Top sheen + flowing-highlight intensity (both toned down for night). */
+  --card-top: rgba(255, 255, 255, 0.28);
   --card-sheen: rgba(255, 255, 255, 0.55);
   --knob: #ffffff;
 }
@@ -91,14 +92,14 @@
   --muted: #9fa097;
   --line: rgba(255, 255, 255, 0.1);
   --accent: #8fa98c;
-  --card-bg: rgba(44, 47, 47, 0.4);
-  --card-border: rgba(255, 255, 255, 0.18);
+  --card-bg: rgba(38, 41, 41, 0.32);
+  --card-border: rgba(255, 255, 255, 0.09);
   --card-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -12px 22px -14px rgba(0, 0, 0, 0.25),
-    0 8px 18px -8px rgba(0, 0, 0, 0.5),
-    0 20px 46px -18px rgba(0, 0, 0, 0.55);
-  --card-sheen: rgba(255, 255, 255, 0.14);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 18px -10px rgba(0, 0, 0, 0.5),
+    0 20px 46px -20px rgba(0, 0, 0, 0.55);
+  --card-top: rgba(255, 255, 255, 0.04);
+  --card-sheen: rgba(255, 255, 255, 0.05);
   --knob: #d2d4cd;
 }
 
@@ -243,7 +244,7 @@ main {
 .memo-editor,
 .noise-card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 52%),
+    linear-gradient(180deg, var(--card-top), transparent 52%),
     var(--card-bg);
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
@@ -288,20 +289,33 @@ main {
 /* ---------- Clock ---------- */
 
 .clock { text-align: center; }
+/* Brand greeting line: "Covely · <greeting>", centered above the clock. */
 .clock-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  color: var(--muted);
   font-size: 14px;
-  letter-spacing: 0.22em;
-  margin-bottom: 10px;
-  padding-left: 0.22em; /* offset the trailing letter-spacing for true centering */
-  color: var(--muted); /* fallback if background-clip:text unsupported */
-  /* A soft highlight slowly sweeps across the greeting — same "flowing light"
-   * language as the liquid-glass cards. */
-  background: linear-gradient(
-    100deg,
-    var(--muted) 42%,
-    var(--fg) 50%,
-    var(--muted) 58%
-  );
+}
+/* Steady wordmark, tinted via currentColor so it follows the theme. */
+.brand-logo {
+  display: inline-block;
+  width: 50px;
+  height: 17px;
+  background: currentColor;
+  opacity: 0.9;
+  -webkit-mask: url("assets/covely-wordmark.svg") center / contain no-repeat;
+  mask: url("assets/covely-wordmark.svg") center / contain no-repeat;
+}
+.greeting-sep { opacity: 0.5; }
+/* Only the greeting word carries the flowing shimmer. */
+.greeting-text {
+  letter-spacing: 0.18em;
+  padding-left: 0.18em; /* offset trailing letter-spacing */
+  color: var(--muted);
+  background: linear-gradient(100deg, var(--muted) 42%, var(--fg) 50%, var(--muted) 58%);
   background-size: 250% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -642,6 +656,7 @@ footer {
   color: var(--muted);
   letter-spacing: 0.04em;
 }
+footer:empty { display: none; } /* extension has no install link → no empty bar */
 footer a {
   color: inherit;
   text-decoration: none;
@@ -742,7 +757,7 @@ footer a:hover { color: var(--fg); border-bottom-color: var(--muted); }
   .noise-variant { width: 28px; height: 28px; font-size: 12px; }
 
   /* Roomier writing surface on phones. (3 classes beat CodeMirror's theme rule.) */
-  .memo-editor .cm-editor .cm-content { min-height: 180px; }
+  .memo-editor .cm-editor .cm-content { min-height: 220px; }
 
   .quote { font-size: 14px; }
 }

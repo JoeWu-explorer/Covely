@@ -69,6 +69,8 @@ async function buildOne(t) {
     recursive: true,
     filter: (src) => !src.endsWith("SOURCES.md"),
   });
+  // Brand wordmark (used as a CSS mask so it follows the theme color).
+  await cp("assets/covely-wordmark.svg", join(t.outdir, "assets/covely-wordmark.svg"));
   for (const extra of t.extras ?? []) {
     await cp(extra, join(t.outdir, basename(extra))).catch((err) => {
       // CNAME is optional during local development

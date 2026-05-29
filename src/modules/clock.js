@@ -32,8 +32,22 @@ export function mountClock(container) {
   root.className = "clock";
   root.setAttribute("aria-label", "时钟");
 
+  // Brand greeting line: "Covely · <greeting>". The wordmark stays steady;
+  // only the greeting text carries the flowing shimmer.
   const greeting = document.createElement("div");
   greeting.className = "clock-greeting";
+  const brand = document.createElement("span");
+  brand.className = "brand-logo";
+  brand.setAttribute("role", "img");
+  brand.setAttribute("aria-label", "Covely");
+  const sep = document.createElement("span");
+  sep.className = "greeting-sep";
+  sep.setAttribute("aria-hidden", "true");
+  sep.textContent = "·";
+  const greetText = document.createElement("span");
+  greetText.className = "greeting-text";
+  greeting.append(brand, sep, greetText);
+
   const time = document.createElement("div");
   time.className = "clock-time";
   const date = document.createElement("div");
@@ -51,7 +65,7 @@ export function mountClock(container) {
     if (bucket !== curBucket) {
       curBucket = bucket;
       const words = GREETINGS[bucket].words;
-      greeting.textContent = words[Math.floor(Math.random() * words.length)];
+      greetText.textContent = words[Math.floor(Math.random() * words.length)];
     }
     time.textContent = `${hh}:${mm}`;
     date.textContent = `${now.getMonth() + 1}月${now.getDate()}日 ${WEEKDAYS[now.getDay()]}`;
