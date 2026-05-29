@@ -4,9 +4,13 @@
 
 import { getAudioContext } from "../lib/audio.js";
 import * as storage from "../lib/storage.js";
+import { icon } from "../lib/icons.js";
 
 const STORAGE_KEY = "covely.sound.preset";
 const ASSETS = "assets/sounds";
+
+/** @type {Record<"rain"|"fire"|"music", string>} */
+const SLOT_ICON = { rain: "droplet", fire: "flame", music: "music" };
 
 /**
  * @typedef {{ enabled: boolean, volume: number, variant: number }} SlotState
@@ -187,13 +191,24 @@ export async function mountNoise(container) {
     hintEl.textContent = slot.hint;
     label.append(nameEl, hintEl);
 
+    const slotIcon = icon(SLOT_ICON[slot.id], 18);
+    slotIcon.classList.add("noise-icon");
+
+    const head = document.createElement("div");
+    head.className = "noise-head";
+    head.append(toggle, slotIcon, label);
+
     const slider = document.createElement("input");
     slider.type = "range";
     slider.min = "0";
     slider.max = "100";
     slider.value = String(state.volume);
+    slider.setAttribute("aria-label", `${slot.label} 音量`);
+    // Filled-track look: CSS reads --pct to paint the played portion.
+    const paint = () => slider.style.setProperty("--pct", `${slider.value}%`);
+    paint();
 
-    card.append(toggle, label, slider);
+    card.append(head, slider);
 
     // Variant picker (only for slots with >1 variants)
     if (slot.variants > 1) {
@@ -238,6 +253,7 @@ export async function mountNoise(container) {
     slider.addEventListener("input", () => {
       sound.setVolume(Number(slider.value) / 100);
       state.volume = Number(slider.value);
+      paint();
     });
     slider.addEventListener("change", async () => {
       await storage.set(STORAGE_KEY, preset);

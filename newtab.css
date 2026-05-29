@@ -1,23 +1,84 @@
-/* Covely shared stylesheet — used by both extension newtab and web app. */
+/* Covely shared stylesheet — used by both extension newtab and web app.
+ *
+ * Look: a calm, copyright-free "quiet cove" atmosphere built entirely from CSS
+ * gradients + self-drawn hill silhouettes. The palette shifts with time of day
+ * (dawn / day / dusk / night) via [data-phase] set by atmosphere.js. No images.
+ */
 
 :root {
-  --bg: #f6f4ef;
-  --fg: #2a2a2a;
-  --muted: #8a8680;
-  --line: #e6e2da;
+  --col: min(560px, 92vw);
+  --radius: 16px;
+
+  /* Default tokens = "day". Each phase below overrides these. */
+  --sky-top: #eef1ec;
+  --sky-mid: #f4f3ec;
+  --sky-bottom: #e7ebe1;
+  --glow: rgba(255, 250, 235, 0.55);
+  --mist: rgba(255, 255, 255, 0.5);
+  --hill-far: #dde3d8;
+  --hill-near: #cdd5c6;
+  --fg: #33352f;
+  --muted: #686d61;
+  --line: rgba(60, 60, 48, 0.12);
   --accent: #5b6e5a;
-  --card-bg: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.62);
+  --card-border: rgba(255, 255, 255, 0.55);
+  --card-shadow: 0 8px 28px -18px rgba(60, 55, 40, 0.32);
+  --knob: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1c1d1c;
-    --fg: #e8e6e0;
-    --muted: #8e8b84;
-    --line: #2c2d2c;
-    --accent: #8aa28a;
-    --card-bg: #232423;
-  }
+:root[data-phase="dawn"] {
+  --sky-top: #f4ede2;
+  --sky-mid: #f7ece0;
+  --sky-bottom: #f1e1d0;
+  --glow: rgba(250, 227, 198, 0.72);
+  --mist: rgba(255, 244, 230, 0.6);
+  --hill-far: #e6dccb;
+  --hill-near: #d7cab2;
+  --fg: #3a342c;
+  --muted: #736b5d;
+  --line: rgba(80, 70, 55, 0.14);
+  --accent: #6a7a5f;
+  --card-bg: rgba(255, 252, 246, 0.66);
+  --card-border: rgba(255, 255, 255, 0.6);
+  --card-shadow: 0 8px 28px -18px rgba(120, 95, 60, 0.32);
+  --knob: #ffffff;
+}
+
+:root[data-phase="dusk"] {
+  --sky-top: #e8ddd5;
+  --sky-mid: #f0d8c1;
+  --sky-bottom: #e2c2a6;
+  --glow: rgba(245, 203, 162, 0.78);
+  --mist: rgba(255, 236, 218, 0.55);
+  --hill-far: #d6c1aa;
+  --hill-near: #c2a788;
+  --fg: #39312a;
+  --muted: #71665a;
+  --line: rgba(80, 65, 50, 0.16);
+  --accent: #6a7a5f;
+  --card-bg: rgba(255, 250, 243, 0.62);
+  --card-border: rgba(255, 255, 255, 0.5);
+  --card-shadow: 0 8px 28px -18px rgba(120, 85, 55, 0.38);
+  --knob: #ffffff;
+}
+
+:root[data-phase="night"] {
+  --sky-top: #111417;
+  --sky-mid: #15191b;
+  --sky-bottom: #181d1c;
+  --glow: rgba(130, 150, 160, 0.1);
+  --mist: rgba(150, 172, 184, 0.08);
+  --hill-far: #0e1213;
+  --hill-near: #090d0d;
+  --fg: #e7e5df;
+  --muted: #9fa097;
+  --line: rgba(255, 255, 255, 0.1);
+  --accent: #8fa98c;
+  --card-bg: rgba(36, 39, 39, 0.5);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
+  --knob: #d2d4cd;
 }
 
 * { box-sizing: border-box; }
@@ -26,21 +87,119 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: var(--bg);
+}
+html { background: var(--sky-bottom); }
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: 1fr auto;
   color: var(--fg);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
     "Hiragino Sans GB", "Segoe UI", sans-serif;
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
+  background:
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 46%, var(--sky-bottom) 100%);
+  background-attachment: fixed;
+  /* Gentle cross-fade when the phase changes through the day. */
+  transition: background 1200ms ease, color 1200ms ease;
 }
 
-body {
-  display: grid;
-  grid-template-rows: 1fr auto;
-  min-height: 100vh;
+/* Soft sun/moon glow — its own layer so it can breathe very slowly. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(135% 75% at 50% 4%, var(--glow) 0%, transparent 60%);
+  transition: background 1200ms ease;
+  transform-origin: 50% 0;
+  animation: glow-breathe 14s ease-in-out infinite;
 }
 
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1) translateY(0); }
+  50% { opacity: 1; transform: scale(1.16) translateY(-4%); }
+}
+
+/* Drifting mist — two big soft blobs sliding slowly across the sky. The most
+ * perceptible motion layer; kept low-opacity so it never competes with text. */
+.mist {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 30% at 26% 20%, var(--mist) 0%, transparent 60%),
+    radial-gradient(44% 32% at 74% 28%, var(--mist) 0%, transparent 62%);
+  transition: background 1200ms ease;
+  animation: mist-drift 38s ease-in-out infinite;
+}
+
+@keyframes mist-drift {
+  0%, 100% { transform: translate3d(-6%, 0, 0) scale(1.05); }
+  50% { transform: translate3d(7%, -3%, 0) scale(1.14); }
+}
+
+/* ---------- Atmosphere: distant hill silhouettes ---------- */
+
+.hills {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 44vh;
+  z-index: 0;
+  pointer-events: none;
+}
+.hill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -5%; /* overscan so the slow drift never reveals an edge */
+  right: -5%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: cover;
+  mask-size: cover;
+  -webkit-mask-position: bottom;
+  mask-position: bottom;
+  transition: background-color 1200ms ease;
+}
+.hill-far {
+  background-color: var(--hill-far);
+  opacity: 0.5;
+  animation: drift-far 44s ease-in-out infinite;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201440%20320'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0,210C300,130,520,190,760,160C1010,128,1230,70,1440,120L1440,320L0,320Z'%20fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201440%20320'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0,210C300,130,520,190,760,160C1010,128,1230,70,1440,120L1440,320L0,320Z'%20fill='%23000'/%3E%3C/svg%3E");
+}
+.hill-near {
+  background-color: var(--hill-near);
+  opacity: 0.78;
+  animation: drift-near 34s ease-in-out infinite;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201440%20320'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0,255C260,205,470,258,720,228C980,196,1180,256,1440,216L1440,320L0,320Z'%20fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201440%20320'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0,255C260,205,470,258,720,228C980,196,1180,256,1440,216L1440,320L0,320Z'%20fill='%23000'/%3E%3C/svg%3E");
+}
+
+@keyframes drift-far {
+  0%, 100% { transform: translateX(-2%) translateY(0); }
+  50% { transform: translateX(2%) translateY(-1.5%); }
+}
+@keyframes drift-near {
+  0%, 100% { transform: translateX(2.8%) translateY(0); }
+  50% { transform: translateX(-2.8%) translateY(1%); }
+}
+
+/* Icons: crisp, inherit text color, never shrink in flex rows. */
+.icon { display: block; flex: none; }
+
+/* Everything interactive sits above the hills. */
 main {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,17 +208,43 @@ main {
   padding: 48px 24px;
 }
 
+/* Visible keyboard focus ring for every interactive element. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Shared frosted-glass surface for inputs and cards. */
+.search-input,
+.memo-editor,
+.noise-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
 /* ---------- Clock ---------- */
 
 .clock { text-align: center; }
+.clock-greeting {
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 0.22em;
+  margin-bottom: 10px;
+  padding-left: 0.22em; /* offset the trailing letter-spacing for true centering */
+}
 .clock-time {
   font-size: clamp(72px, 14vw, 144px);
   font-weight: 200;
   letter-spacing: -0.02em;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 .clock-date {
-  margin-top: 12px;
+  margin-top: 14px;
   font-size: 14px;
   color: var(--muted);
   letter-spacing: 0.04em;
@@ -67,18 +252,28 @@ main {
 
 /* ---------- Search ---------- */
 
-.search {
-  width: min(520px, 90vw);
+.search-box {
+  position: relative;
+  width: 100%;
 }
+.search-icon {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  transition: color 0.2s;
+}
+.search-box:focus-within .search-icon { color: var(--accent); }
 .search-input {
   width: 100%;
-  padding: 12px 18px;
-  font-size: 15px;
+  height: 60px;
+  padding: 0 24px 0 54px; /* room for the leading icon */
+  font-size: 17px;
   font-weight: 300;
   font-family: inherit;
-  background: var(--card-bg);
   color: var(--fg);
-  border: 1px solid var(--line);
   border-radius: 999px;
   outline: none;
   transition: border-color 0.2s;
@@ -86,48 +281,122 @@ main {
 .search-input::placeholder { color: var(--muted); }
 .search-input:focus { border-color: var(--accent); }
 
+/* Floating trigger (top-left, mirrors the theme control top-right). */
+.search-control {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  padding: 16px 18px;
+}
+.search-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  color: var(--fg);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: color 0.2s;
+}
+.search-trigger:hover { color: var(--accent); }
+
+/* Overlay (command-palette style). */
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 18vh 24px 24px;
+  background: color-mix(in srgb, #000 30%, transparent);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.search-overlay[hidden] { display: none; }
+.search-panel {
+  width: min(620px, 92vw);
+}
+.search-panel form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.search-engines {
+  display: flex;
+  gap: 6px;
+  padding-left: 4px;
+}
+.search-engine {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 300;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.search-engine:hover { color: var(--fg); }
+.search-engine[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* ---------- Memo ---------- */
 
 .memo {
-  width: min(520px, 90vw);
+  width: var(--col);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.memo-textarea {
+.memo-editor {
   width: 100%;
-  min-height: 90px;
-  padding: 14px 18px;
-  font-size: 14px;
-  font-weight: 300;
-  font-family: inherit;
-  background: var(--card-bg);
-  color: var(--fg);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  outline: none;
-  resize: vertical;
+  border-radius: var(--radius);
+  overflow: hidden; /* clip CodeMirror to the rounded frosted card */
   transition: border-color 0.2s;
-  line-height: 1.6;
 }
-.memo-textarea::placeholder { color: var(--muted); }
-.memo-textarea:focus { border-color: var(--accent); }
+.memo-editor:focus-within { border-color: var(--accent); }
+/* CodeMirror fills the card; the visible surface is the .memo-editor frosting. */
+.memo-editor .cm-editor { background: transparent; }
+.memo-editor .cm-editor.cm-focused { outline: none; }
 .memo-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  font-size: 12px;
-  color: var(--muted);
+  padding: 0 4px;
 }
+.memo-hint {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.memo-buttons { display: flex; gap: 4px; }
 .memo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: none;
   border: none;
   color: var(--muted);
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
   transition: background 0.15s, color 0.15s;
 }
 .memo-btn:hover { background: var(--line); color: var(--fg); }
@@ -140,28 +409,44 @@ main {
   flex-direction: row;
   gap: 12px;
   flex-wrap: wrap;
+  align-items: stretch; /* equal card heights regardless of variant row */
   justify-content: center;
-  width: min(720px, 95vw);
+  width: var(--col); /* same axis as search / memo */
 }
 .noise-card {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  background: var(--card-bg);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  flex: 1 1 220px;
-  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius);
+  flex: 1 1 0; /* three equal columns within --col */
+  min-width: 0; /* allow shrink so labels never overflow */
   transition: border-color 0.2s, box-shadow 0.2s;
+}
+.noise-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--card-border));
 }
 .noise-card.on {
   border-color: var(--accent);
   box-shadow: 0 1px 0 rgba(91, 110, 90, 0.04),
-    0 8px 24px -16px rgba(91, 110, 90, 0.25);
+    0 10px 28px -16px rgba(91, 110, 90, 0.4);
 }
+
+/* Header row: toggle + icon + label, on one line. */
+.noise-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.noise-icon {
+  color: var(--muted);
+  opacity: 0.8;
+  transition: color 0.2s, opacity 0.2s;
+}
+.noise-card.on .noise-icon { color: var(--accent); opacity: 1; }
 .noise-toggle {
+  flex: none;
   width: 36px;
   height: 22px;
   border-radius: 999px;
@@ -180,22 +465,35 @@ main {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--card-bg);
+  background: var(--knob);
   transition: transform 0.2s;
 }
 .noise-card.on .noise-toggle { background: var(--accent); }
 .noise-card.on .noise-toggle::after { transform: translateX(14px); }
 .noise-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .noise-name { font-size: 14px; }
-.noise-hint { font-size: 11px; color: var(--muted); }
+.noise-hint {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Volume slider — full card width on its own row. */
 .noise-card input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  width: 80px;
-  height: 2px;
-  background: var(--line);
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0 var(--pct, 60%),
+    var(--line) var(--pct, 60%)
+  );
   border-radius: 999px;
   outline: none;
+  cursor: pointer;
 }
 .noise-card input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -205,30 +503,24 @@ main {
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
-  border: 2px solid var(--card-bg);
+  border: 2px solid var(--knob);
   box-shadow: 0 0 0 1px var(--line);
 }
 
-/* Variant picker — small dots under the card body, only on slots with multiple variants. */
-.noise-card {
-  /* allow variants row to wrap below the main row */
-  row-gap: 8px;
-}
+/* Variant picker — dots row, only on slots with multiple variants. */
 .noise-variants {
-  grid-column: 1 / -1;
   display: flex;
-  gap: 6px;
-  padding-left: 50px; /* align with label, past the toggle */
+  gap: 8px;
 }
 .noise-variant {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: transparent;
   cursor: pointer;
   padding: 0;
-  font-size: 10px;
+  font-size: 11px;
   font-family: inherit;
   color: var(--muted);
   transition: border-color 0.15s, background 0.15s, color 0.15s;
@@ -241,14 +533,16 @@ main {
 .noise-variant::before {
   content: attr(data-v);
 }
-.noise-variant.on::before { color: var(--card-bg); }
+.noise-variant.on::before { color: var(--knob); }
 
 /* ---------- Footer ---------- */
 
 footer {
+  position: relative;
+  z-index: 1;
   padding: 16px 24px;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   letter-spacing: 0.04em;
 }
@@ -258,3 +552,80 @@ footer a {
   border-bottom: 1px dotted var(--line);
 }
 footer a:hover { color: var(--fg); border-bottom-color: var(--muted); }
+
+/* ---------- Phase control (top-right) ---------- */
+
+.theme-control {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 50;
+  padding: 16px 18px;
+}
+.theme-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  color: var(--fg);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: color 0.2s, transform 0.2s;
+}
+.theme-trigger:hover { color: var(--accent); }
+.theme-menu {
+  position: absolute;
+  top: 56px;
+  right: 18px;
+  min-width: 156px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.theme-menu[hidden] { display: none; }
+.theme-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 300;
+  border-radius: 9px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+.theme-item:hover { background: var(--line); }
+.theme-item[aria-checked="true"] { color: var(--accent); }
+/* The trailing check icon is visible only on the selected item. */
+.theme-item .icon:last-child { margin-left: auto; opacity: 0; }
+.theme-item[aria-checked="true"] .icon:last-child { opacity: 1; }
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

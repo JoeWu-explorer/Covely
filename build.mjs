@@ -43,10 +43,11 @@ async function buildOne(t) {
     outfile: join(t.outdir, "bundle.js"),
     sourcemap: true,
     legalComments: "none",
-    // minifySyntax DCE's `if (false)` branches that result from `define`
-    // substitution, so the web bundle ends up with zero chrome.* references.
-    // Whitespace/identifiers are preserved for readable bundles + sourcemaps.
-    minifySyntax: true,
+    // Full minify keeps the shipped bundle small now that CodeMirror is bundled.
+    // It includes minifySyntax, which DCE's the `if (false)` branches from
+    // `define` substitution — so the web bundle still has zero chrome.* refs.
+    // A sourcemap is emitted for debugging the minified output.
+    minify: true,
     define: {
       "process.env.COVELY_TARGET": JSON.stringify(t.name),
     },
