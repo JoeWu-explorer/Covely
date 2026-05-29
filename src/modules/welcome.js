@@ -1,10 +1,17 @@
-// First-visit welcome: a calm, premium glass dialog that says hello, has a
-// small moment with the visitor, and offers to turn on a curated soundscape.
-// Shown once — a flag in storage keeps it from returning.
+// A calm, premium glass dialog shown on every visit: it greets the visitor with
+// a fresh line, has a small moment with them, and offers to turn on a curated
+// soundscape. The greeting is picked at random each load so it never feels stale.
 
-import * as storage from "../lib/storage.js";
-
-const ONBOARDED_KEY = "covely.onboarded";
+/** @type {ReadonlyArray<{ title: string, lead: string }>} */
+const GREETINGS = [
+  { title: "很高兴遇见你", lead: "这里是 Covely —— 一处让你慢下来、安静做事的小角落。" },
+  { title: "你来啦", lead: "先放下手里的急事，给自己几秒钟，深呼吸一下。" },
+  { title: "欢迎回来", lead: "无论今天过得怎样，这一刻可以只属于你自己。" },
+  { title: "嘿，又见面了", lead: "不着急，我们一起慢慢把心静下来。" },
+  { title: "今天也辛苦了", lead: "在开始之前，先让自己舒舒服服地坐好。" },
+  { title: "停一停，歇口气", lead: "这里没有催促，只有属于你的安静节奏。" },
+  { title: "找个地方安顿一下", lead: "把窗外的喧嚣关在门外，留一点空间给自己。" },
+];
 
 // The soundscape applied if the visitor says yes — rain (variant 2, gentle),
 // fire (variant 1, warmer), and a soft piano bed at half volume.
@@ -18,8 +25,8 @@ const WELCOME_PRESET = {
 /**
  * @param {{ applyPreset: (p: import("./noise.js").SoundPreset) => void }} noise
  */
-export async function mountWelcome(noise) {
-  if (await storage.get(ONBOARDED_KEY)) return;
+export function mountWelcome(noise) {
+  const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
 
   const scrim = document.createElement("div");
   scrim.className = "welcome-scrim";
@@ -41,11 +48,11 @@ export async function mountWelcome(noise) {
 
   const title = document.createElement("h2");
   title.className = "welcome-title";
-  title.textContent = "很高兴遇见你";
+  title.textContent = greeting.title;
 
   const lead = document.createElement("p");
   lead.className = "welcome-text";
-  lead.textContent = "这里是 Covely —— 一处让你慢下来、安静做事的小角落。";
+  lead.textContent = greeting.lead;
 
   const ask = document.createElement("p");
   ask.className = "welcome-text";
@@ -75,7 +82,6 @@ export async function mountWelcome(noise) {
   function close() {
     if (closed) return;
     closed = true;
-    void storage.set(ONBOARDED_KEY, true);
     scrim.classList.add("leaving");
     card.classList.add("leaving");
     const finish = () => {
@@ -91,7 +97,8 @@ export async function mountWelcome(noise) {
   }
 
   yes.addEventListener("click", () => {
-    noise.applyPreset(WELCOME_PRESET); // click is the gesture that unlocks audio
+    // click is the gesture that unlocks audio; never let a sound hiccup block close
+    try { noise.applyPreset(WELCOME_PRESET); } catch (err) { console.error("[welcome]", err); }
     close();
   });
   no.addEventListener("click", close);
