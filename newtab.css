@@ -6,7 +6,9 @@
  */
 
 :root {
-  --col: min(560px, 92vw);
+  /* Content axis (memo / noise align to it). 48px = main's 24px side padding
+   * ×2, so the column never overflows the viewport on any width. */
+  --col: min(560px, calc(100vw - 48px));
   --radius: 16px;
 
   /* Default tokens = "day". Each phase below overrides these. */
@@ -305,7 +307,8 @@ main {
   top: 0;
   left: 0;
   z-index: 50;
-  padding: 16px 18px;
+  padding: max(16px, env(safe-area-inset-top)) 18px 18px
+    max(18px, env(safe-area-inset-left));
 }
 .search-trigger {
   display: flex;
@@ -340,7 +343,7 @@ main {
 }
 .search-overlay[hidden] { display: none; }
 .search-panel {
-  width: min(620px, 92vw);
+  width: min(620px, calc(100vw - 48px));
 }
 .search-panel form {
   display: flex;
@@ -558,7 +561,7 @@ main {
 footer {
   position: relative;
   z-index: 1;
-  padding: 16px 24px;
+  padding: 16px 24px max(16px, env(safe-area-inset-bottom));
   text-align: center;
   font-size: 12px;
   color: var(--muted);
@@ -578,7 +581,8 @@ footer a:hover { color: var(--fg); border-bottom-color: var(--muted); }
   top: 0;
   right: 0;
   z-index: 50;
-  padding: 16px 18px;
+  padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right))
+    18px 18px;
 }
 .theme-trigger {
   display: flex;
@@ -635,6 +639,49 @@ footer a:hover { color: var(--fg); border-bottom-color: var(--muted); }
 /* The trailing check icon is visible only on the selected item. */
 .theme-item .icon:last-child { margin-left: auto; opacity: 0; }
 .theme-item[aria-checked="true"] .icon:last-child { opacity: 1; }
+
+/* ---------- Responsive: narrow screens ---------- */
+
+@media (max-width: 600px) {
+  main { gap: 28px; padding: 36px 24px; }
+
+  /* Stack the three sound cards; each becomes a compact left/right layout:
+   * row 1 = toggle+icon+label (left) and variant switcher (right),
+   * row 2 = full-width slider. Shorter than the desktop three-row card. */
+  .noise { flex-direction: column; }
+  .noise-card {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "head variants"
+      "slider slider";
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 14px;
+  }
+  .noise-head { grid-area: head; gap: 12px; }
+  .noise-variants { grid-area: variants; gap: 10px; }
+  .noise-card input[type="range"] { grid-area: slider; }
+  /* Bigger touch targets for variant dots. */
+  .noise-variant { width: 28px; height: 28px; font-size: 12px; }
+
+  /* Roomier writing surface on phones. (3 classes beat CodeMirror's theme rule.) */
+  .memo-editor .cm-editor .cm-content { min-height: 180px; }
+
+  .quote { font-size: 14px; }
+}
+
+/* ---------- Responsive: short viewports (landscape phones) ---------- */
+
+@media (max-height: 520px) {
+  main { gap: 18px; padding: 20px 24px; }
+  .clock-time { font-size: clamp(44px, 14vh, 88px); }
+  .clock-greeting { margin-bottom: 4px; }
+  .clock-date { margin-top: 8px; }
+  .quote { margin-top: 10px; }
+  .search-overlay { padding-top: 9vh; }
+}
 
 /* ---------- Reduced motion ---------- */
 
