@@ -13,7 +13,10 @@ function greetingFor(hour) {
   return "夜深了";
 }
 
-/** @param {HTMLElement} container */
+/**
+ * @param {HTMLElement} container
+ * @returns {HTMLElement} the clock section (so siblings like the quote can attach)
+ */
 export function mountClock(container) {
   const root = document.createElement("section");
   root.className = "clock";
@@ -39,4 +42,6 @@ export function mountClock(container) {
 
   render();
   setInterval(render, 30_000);
+
+  return root;
 }

@@ -249,6 +249,24 @@ main {
   color: var(--muted);
   letter-spacing: 0.04em;
 }
+.quote {
+  display: block;
+  margin: 18px auto 0;
+  max-width: 30em;
+  padding: 6px 14px;
+  background: none;
+  border: none;
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.6;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: opacity 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+.quote:hover { color: var(--fg); background: var(--line); }
 
 /* ---------- Search ---------- */
 
