@@ -165,6 +165,11 @@ export async function mountNoise(container) {
   root.className = "noise";
   root.setAttribute("aria-label", "声音陪伴");
 
+  /** @typedef {{ setEnabled: (on: boolean, opts?: { play?: boolean }) => void, setVolume: (v: number) => void, setVariant: (v: number) => void }} SlotControl */
+  /** @type {Record<string, SlotControl>} */
+  const controls = {};
+  const save = () => storage.set(STORAGE_KEY, preset);
+
   for (const slot of SLOTS) {
     const state = preset[slot.id];
     const sound = createSlot(slot.id);
@@ -211,9 +216,11 @@ export async function mountNoise(container) {
     card.append(head, slider);
 
     // Variant picker (only for slots with >1 variants)
+    /** @type {HTMLElement | null} */
+    let variantsEl = null;
     if (slot.variants > 1) {
-      const variants = document.createElement("div");
-      variants.className = "noise-variants";
+      variantsEl = document.createElement("div");
+      variantsEl.className = "noise-variants";
       for (let v = 1; v <= slot.variants; v++) {
         const dot = document.createElement("button");
         dot.className = "noise-variant";
@@ -221,44 +228,75 @@ export async function mountNoise(container) {
         dot.dataset.v = String(v);
         dot.setAttribute("aria-label", `${slot.label} 变体 ${v}`);
         if (v === state.variant) dot.classList.add("on");
-        dot.addEventListener("click", async () => {
-          state.variant = v;
-          sound.setVariant(v);
-          for (const sibling of variants.querySelectorAll(".noise-variant")) {
-            sibling.classList.toggle("on", sibling === dot);
-          }
-          await storage.set(STORAGE_KEY, preset);
-        });
-        variants.appendChild(dot);
+        dot.addEventListener("click", () => { setVariant(v); void save(); });
+        variantsEl.appendChild(dot);
       }
-      card.appendChild(variants);
+      card.appendChild(variantsEl);
     }
 
     root.appendChild(card);
 
-    toggle.addEventListener("click", async () => {
-      if (sound.running) {
-        sound.stop();
-        card.classList.remove("on");
-        state.enabled = false;
-      } else {
+    /** @param {number} v 1-based variant */
+    function setVariant(v) {
+      state.variant = v;
+      sound.setVariant(v);
+      variantsEl?.querySelectorAll(".noise-variant").forEach((el) => {
+        const d = /** @type {HTMLElement} */ (el);
+        d.classList.toggle("on", d.dataset.v === String(v));
+      });
+    }
+    /** @param {number} v 0–100 */
+    function setVolume(v) {
+      slider.value = String(v);
+      paint();
+      sound.setVolume(v / 100);
+      state.volume = v;
+    }
+    /** @param {boolean} on @param {{ play?: boolean }} [opts] */
+    function setEnabled(on, opts) {
+      if (on) {
         card.classList.add("on");
         state.enabled = true;
         sound.setVolume(Number(slider.value) / 100);
-        void sound.start();
+        if (opts?.play !== false) void sound.start();
+      } else {
+        sound.stop();
+        card.classList.remove("on");
+        state.enabled = false;
       }
-      await storage.set(STORAGE_KEY, preset);
-    });
+    }
+    controls[slot.id] = { setEnabled, setVolume, setVariant };
 
+    toggle.addEventListener("click", () => {
+      setEnabled(!sound.running);
+      void save();
+    });
     slider.addEventListener("input", () => {
       sound.setVolume(Number(slider.value) / 100);
       state.volume = Number(slider.value);
       paint();
     });
-    slider.addEventListener("change", async () => {
-      await storage.set(STORAGE_KEY, preset);
-    });
+    slider.addEventListener("change", () => void save());
   }
 
   container.appendChild(root);
+
+  return {
+    /**
+     * Apply a curated preset (from the welcome modal) and start it playing.
+     * Must be called inside a user gesture so the AudioContext can resume.
+     * @param {SoundPreset} p
+     */
+    applyPreset(p) {
+      for (const slot of SLOTS) {
+        const c = controls[slot.id];
+        const ps = p[slot.id];
+        if (!c || !ps) continue;
+        c.setVariant(ps.variant);
+        c.setVolume(ps.volume);
+        c.setEnabled(ps.enabled);
+      }
+      void save();
+    },
+  };
 }
