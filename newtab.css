@@ -34,6 +34,7 @@
   --card-top: rgba(255, 255, 255, 0.28);
   --card-sheen: rgba(255, 255, 255, 0.55);
   --knob: #ffffff;
+  --menu-bg: #f6f7f3;
 }
 
 :root[data-phase="dawn"] {
@@ -56,6 +57,7 @@
     0 6px 16px -8px rgba(120, 95, 60, 0.22),
     0 18px 44px -18px rgba(120, 95, 60, 0.2);
   --knob: #ffffff;
+  --menu-bg: #fdf8f1;
 }
 
 :root[data-phase="dusk"] {
@@ -78,6 +80,7 @@
     0 6px 16px -8px rgba(120, 85, 55, 0.26),
     0 18px 44px -18px rgba(120, 85, 55, 0.22);
   --knob: #ffffff;
+  --menu-bg: #fbf3ea;
 }
 
 :root[data-phase="night"] {
@@ -101,6 +104,7 @@
   --card-top: rgba(255, 255, 255, 0.04);
   --card-sheen: rgba(255, 255, 255, 0.05);
   --knob: #d2d4cd;
+  --menu-bg: #23282a;
 }
 
 * { box-sizing: border-box; }
@@ -864,33 +868,101 @@ main {
   box-shadow: 0 0 0 1px var(--line);
 }
 
-/* Variant picker — dots row, only on slots with multiple variants. */
-.noise-variants {
-  display: flex;
-  gap: 8px;
+/* Variant picker — named-option dropdown, only on slots with multiple variants. */
+.noise-picker {
+  position: relative;
+  align-self: flex-start;
 }
-.noise-variant {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  background: transparent;
+.noise-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
-  padding: 0;
-  font-size: 11px;
-  font-family: inherit;
-  color: var(--muted);
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.noise-variant:hover { border-color: var(--accent); }
-.noise-variant.on {
-  background: var(--accent);
+.noise-picker-trigger:hover,
+.noise-picker-trigger[aria-expanded="true"] {
   border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--fg);
 }
-.noise-variant::before {
-  content: attr(data-v);
+.noise-picker-label {
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.noise-variant.on::before { color: var(--knob); }
+.noise-picker-caret {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.95;
+  transition: transform 0.15s;
+}
+.noise-picker-trigger[aria-expanded="true"] .noise-picker-caret {
+  transform: rotate(180deg);
+}
+.noise-picker-menu {
+  position: absolute;
+  bottom: calc(100% + 6px); /* pop up — the cards live near the bottom edge */
+  left: 0;
+  z-index: 10;
+  min-width: 160px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  background: var(--menu-bg, #f6f7f3);
+  box-shadow:
+    0 2px 8px -2px rgba(40, 36, 28, 0.18),
+    0 18px 44px -14px rgba(40, 36, 28, 0.30);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.noise-picker-menu[hidden] { display: none; }
+.noise-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.noise-picker-item::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  flex: none;
+  transition: background 0.12s;
+}
+.noise-picker-item:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.noise-picker-item[aria-checked="true"] {
+  color: var(--accent);
+}
+.noise-picker-item[aria-checked="true"]::before {
+  background: var(--accent);
+}
 
 /* ---------- Footer ---------- */
 
@@ -991,17 +1063,17 @@ footer a:hover { color: var(--fg); border-bottom-color: var(--muted); }
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-areas:
-      "head variants"
+      "head picker"
       "slider slider";
     align-items: center;
     column-gap: 12px;
     row-gap: 14px;
   }
   .noise-head { grid-area: head; gap: 12px; }
-  .noise-variants { grid-area: variants; gap: 10px; }
+  .noise-picker { grid-area: picker; justify-self: end; }
   .noise-card input[type="range"] { grid-area: slider; }
-  /* Bigger touch targets for variant dots. */
-  .noise-variant { width: 28px; height: 28px; font-size: 12px; }
+  /* On phones, anchor the popover to the right so it stays in viewport. */
+  .noise-picker-menu { left: auto; right: 0; }
 
   /* Roomier writing surface on phones. (3 classes beat CodeMirror's theme rule.) */
   .memo-editor .cm-editor .cm-content { min-height: 220px; }
