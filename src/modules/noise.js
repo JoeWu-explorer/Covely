@@ -17,10 +17,24 @@ const SLOT_ICON = { rain: "droplet", fire: "flame", music: "music" };
  * @typedef {Record<"rain"|"fire"|"music", SlotState>} SoundPreset
  */
 
+// Variant names are surfaced in the dropdown picker. Order matches the on-disk
+// `<slot>-<n>.mp3` files; renaming an entry only changes the label, not the audio.
 const SLOTS = /** @type {const} */ ([
-  { id: "rain", label: "雨声", hint: "连绵的雨", variants: 3 },
-  { id: "fire", label: "篝火", hint: "噼啪的火焰", variants: 3 },
-  { id: "music", label: "轻音乐", hint: "钢琴小品", variants: 1 },
+  {
+    id: "rain", label: "雨声", hint: "连绵的雨",
+    variantNames: ["Drizzle", "Soft Rain", "Lullaby Rain"],
+  },
+  {
+    id: "fire", label: "篝火", hint: "噼啪的火焰",
+    variantNames: ["Hearth", "Bonfire", "Crackle"],
+  },
+  {
+    id: "music", label: "轻音乐", hint: "钢琴小品",
+    variantNames: [
+      "Calm Mattress", "Calm Mattress II", "Healing Waterfall",
+      "Piano Saltwater", "Piano Saltwater II", "Pillow Mercury",
+    ],
+  },
 ]);
 
 /** @type {SoundPreset} */
@@ -215,23 +229,17 @@ export async function mountNoise(container) {
 
     card.append(head, slider);
 
-    // Variant picker (only for slots with >1 variants)
-    /** @type {HTMLElement | null} */
-    let variantsEl = null;
-    if (slot.variants > 1) {
-      variantsEl = document.createElement("div");
-      variantsEl.className = "noise-variants";
-      for (let v = 1; v <= slot.variants; v++) {
-        const dot = document.createElement("button");
-        dot.className = "noise-variant";
-        dot.type = "button";
-        dot.dataset.v = String(v);
-        dot.setAttribute("aria-label", `${slot.label} 变体 ${v}`);
-        if (v === state.variant) dot.classList.add("on");
-        dot.addEventListener("click", () => { setVariant(v); void save(); });
-        variantsEl.appendChild(dot);
-      }
-      card.appendChild(variantsEl);
+    // Variant picker (only for slots with >1 variants) — dropdown of named options.
+    /** @type {ReturnType<typeof createPicker> | null} */
+    let picker = null;
+    if (slot.variantNames.length > 1) {
+      picker = createPicker({
+        slotLabel: slot.label,
+        names: [...slot.variantNames],
+        getCurrent: () => state.variant,
+        onPick: (v) => { setVariant(v); void save(); },
+      });
+      card.appendChild(picker.root);
     }
 
     root.appendChild(card);
@@ -240,10 +248,7 @@ export async function mountNoise(container) {
     function setVariant(v) {
       state.variant = v;
       sound.setVariant(v);
-      variantsEl?.querySelectorAll(".noise-variant").forEach((el) => {
-        const d = /** @type {HTMLElement} */ (el);
-        d.classList.toggle("on", d.dataset.v === String(v));
-      });
+      picker?.sync();
     }
     /** @param {number} v 0–100 */
     function setVolume(v) {
@@ -299,4 +304,89 @@ export async function mountNoise(container) {
       void save();
     },
   };
+}
+
+// ---------- Variant picker (dropdown) ----------
+
+/**
+ * Self-contained variant picker: a button that shows the current variant name
+ * and opens a popover menu. Mirrors the popover style used by atmosphere &
+ * search controls (button + role=menu + outside-click close + Escape).
+ *
+ * @param {{ slotLabel: string, names: string[],
+ *           getCurrent: () => number, onPick: (variant: number) => void }} opts
+ */
+function createPicker(opts) {
+  const root = document.createElement("div");
+  root.className = "noise-picker";
+
+  const trigger = document.createElement("button");
+  trigger.className = "noise-picker-trigger";
+  trigger.type = "button";
+  trigger.setAttribute("aria-haspopup", "menu");
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.setAttribute("aria-label", `${opts.slotLabel} 音源`);
+
+  const labelEl = document.createElement("span");
+  labelEl.className = "noise-picker-label";
+  const caret = document.createElement("span");
+  caret.className = "noise-picker-caret";
+  caret.setAttribute("aria-hidden", "true");
+  caret.textContent = "▾";
+  trigger.append(labelEl, caret);
+
+  const menu = document.createElement("div");
+  menu.className = "noise-picker-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+
+  /** @type {HTMLButtonElement[]} */
+  const items = [];
+  opts.names.forEach((name, i) => {
+    const item = document.createElement("button");
+    item.className = "noise-picker-item";
+    item.type = "button";
+    item.setAttribute("role", "menuitemradio");
+    item.textContent = name;
+    item.addEventListener("click", () => {
+      opts.onPick(i + 1); // 1-based variant
+      close();
+    });
+    items.push(item);
+    menu.appendChild(item);
+  });
+
+  function sync() {
+    const cur = opts.getCurrent();
+    labelEl.textContent = opts.names[cur - 1] ?? opts.names[0];
+    items.forEach((el, i) => el.setAttribute("aria-checked", String(i + 1 === cur)));
+  }
+  function open() {
+    menu.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    document.addEventListener("pointerdown", onOutside, true);
+    document.addEventListener("keydown", onKey, true);
+  }
+  function close() {
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    document.removeEventListener("pointerdown", onOutside, true);
+    document.removeEventListener("keydown", onKey, true);
+  }
+  /** @param {PointerEvent} e */
+  function onOutside(e) {
+    if (!root.contains(/** @type {Node} */ (e.target))) close();
+  }
+  /** @param {KeyboardEvent} e */
+  function onKey(e) {
+    if (e.key === "Escape") { close(); trigger.focus(); }
+  }
+
+  trigger.addEventListener("click", () => {
+    if (menu.hidden) open(); else close();
+  });
+
+  root.append(trigger, menu);
+  sync();
+  return { root, sync };
 }
