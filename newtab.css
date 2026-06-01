@@ -782,15 +782,17 @@ main {
   border-radius: var(--radius);
   flex: 1 1 0; /* three equal columns within --col */
   min-width: 0; /* allow shrink so labels never overflow */
+  /* De-emphasised: no outline — the cards read as soft, borderless panels that
+   * melt into the scene rather than framed controls competing for attention. */
+  border-color: transparent;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .noise-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--card-border));
+  border-color: transparent;
 }
 .noise-card.on {
-  border-color: var(--accent);
-  box-shadow: 0 1px 0 rgba(91, 110, 90, 0.04),
-    0 10px 28px -16px rgba(91, 110, 90, 0.4);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* Header row: toggle + icon + label, on one line. */
@@ -806,31 +808,52 @@ main {
   transition: color 0.2s, opacity 0.2s;
 }
 .noise-card.on .noise-icon { color: var(--accent); opacity: 1; }
+/* Skeuomorphic switch: a recessed groove (inset shadow) cradling a raised,
+ * glossy knob (top-lit gradient + drop shadow). Reads as a real, tactile toggle. */
 .noise-toggle {
   flex: none;
-  width: 36px;
-  height: 22px;
+  width: 38px;
+  height: 21px;
   border-radius: 999px;
-  background: var(--line);
   border: none;
   position: relative;
   cursor: pointer;
   padding: 0;
-  transition: background 0.2s;
+  background: linear-gradient(180deg, #cfd2cb, #e2e4dd);
+  box-shadow:
+    inset 0 1.5px 3px rgba(40, 36, 28, 0.3),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.55);
+  transition: background 0.25s ease;
 }
 .noise-toggle::after {
   content: "";
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
+  top: 2px;
+  left: 2px;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
-  background: var(--knob);
-  transition: transform 0.2s;
+  /* Raised glossy knob — top-light gradient + soft drop shadow lift it off the
+   * track; the inset white rim adds the specular sheen. */
+  background: radial-gradient(125% 125% at 50% 22%, #ffffff, #ececec 80%);
+  box-shadow:
+    0 1.5px 3px rgba(40, 36, 28, 0.34),
+    0 1px 1px rgba(40, 36, 28, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 2px rgba(40, 36, 28, 0.08);
+  transition: transform 0.26s cubic-bezier(0.34, 1.18, 0.5, 1);
 }
-.noise-card.on .noise-toggle { background: var(--accent); }
-.noise-card.on .noise-toggle::after { transform: translateX(14px); }
+.noise-card.on .noise-toggle {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 72%, #ffffff),
+    var(--accent)
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(40, 36, 28, 0.28),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.3);
+}
+.noise-card.on .noise-toggle::after { transform: translateX(17px); }
 .noise-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .noise-name { font-size: 14px; }
 .noise-hint {

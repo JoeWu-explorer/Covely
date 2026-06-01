@@ -151,3 +151,5 @@ build/
 # Raw audio downloads (kept locally for re-transcoding; never committed)
 covely-sounds/
 
+covely-teaser.mp4
+covely-teaser-landscape.mp4
