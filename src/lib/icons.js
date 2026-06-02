@@ -36,6 +36,7 @@ const ICONS = {
   moon: [["path", { d: "M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z" }]],
   clock: [["circle", { cx: 12, cy: 12, r: 9 }], ["path", { d: "M12 7v5l3 2" }]],
   search: [["circle", { cx: 11, cy: 11, r: 8 }], ["path", { d: "m21 21-4.3-4.3" }]],
+  message: [["path", { d: "M7.9 20A9 9 0 1 0 4 16.1L2 22Z" }]],
   // memo actions
   copy: [
     ["rect", { width: 13, height: 13, x: 9, y: 9, rx: 2 }],

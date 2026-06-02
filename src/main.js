@@ -8,6 +8,7 @@ import { mountSearch } from "./modules/search.js";
 import { mountMemo } from "./modules/memo.js";
 import { mountNoise } from "./modules/noise.js";
 import { mountWelcome } from "./modules/welcome.js";
+import { mountFeedback } from "./modules/feedback.js";
 
 const app = document.getElementById("app");
 if (!app) throw new Error("Covely: #app element not found");
@@ -19,4 +20,5 @@ void mountPomodoro(clockSection); // focus timer, tucked under the quote
 mountMemo(app);
 const noise = await mountNoise(app);
 mountSearch(); // floating icon (top-left) + overlay — not part of the column
+mountFeedback(); // floating icon (bottom-right) + dialog — user-initiated, sends to dev
 void mountWelcome(noise); // first-visit greeting; offers to turn on the soundscape

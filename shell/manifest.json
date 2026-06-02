@@ -6,5 +6,6 @@
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
-  "permissions": ["storage", "notifications"]
+  "permissions": ["storage", "notifications"],
+  "host_permissions": ["https://api.web3forms.com/*"]
 }

@@ -3,5 +3,6 @@
 declare const process: {
   env: {
     COVELY_TARGET: "extension" | "web";
+    COVELY_VERSION: string;
   };
 };

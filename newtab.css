@@ -1252,6 +1252,210 @@ footer a:hover { color: var(--fg); border-bottom-color: var(--muted); }
   to { opacity: 1; }
 }
 
+/* ---------- Feedback ---------- */
+
+/* Floating trigger (bottom-right, mirrors the search/theme controls). */
+.feedback-control {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 50;
+  padding: 18px max(18px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) 18px;
+}
+.feedback-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  color: var(--fg);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  transition: color 0.2s, transform 0.2s;
+}
+.feedback-trigger:hover { color: var(--accent); transform: translateY(-1px); }
+
+/* Dialog — reuses the welcome-* keyframes (global) for enter/leave. */
+.feedback-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--sky-bottom) 55%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+  will-change: opacity;
+  animation: welcome-fade 0.6s ease both;
+}
+.feedback-scrim.leaving { animation: welcome-fade 0.45s ease reverse both; }
+.feedback-card {
+  position: fixed;
+  z-index: 101;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 40px));
+  padding: 34px 32px 26px;
+  border: 1px solid var(--card-border);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, var(--card-top), transparent 50%),
+    var(--card-bg);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  box-shadow: var(--card-shadow);
+  will-change: transform, opacity;
+  animation: welcome-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.feedback-card.leaving { animation: welcome-out 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+.feedback-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: var(--fg);
+}
+.feedback-sub {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.feedback-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.feedback-cats { display: flex; gap: 6px; }
+.feedback-cat {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 300;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  transition: color 0.15s, border-color 0.15s;
+}
+.feedback-cat:hover { color: var(--fg); }
+.feedback-cat[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+
+.feedback-textarea,
+.feedback-email {
+  width: 100%;
+  font-family: inherit;
+  font-weight: 300;
+  color: var(--fg);
+  background:
+    linear-gradient(180deg, var(--card-top), transparent 52%),
+    var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.feedback-textarea {
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.6;
+  border-radius: 16px;
+  resize: vertical;
+  min-height: 96px;
+}
+.feedback-email {
+  height: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 999px;
+}
+.feedback-textarea::placeholder,
+.feedback-email::placeholder { color: var(--muted); }
+.feedback-textarea:focus,
+.feedback-email:focus { border-color: var(--accent); }
+.feedback-fallback-text { color: var(--muted); font-size: 13px; }
+
+/* Honeypot — off-screen, never shown to humans. */
+.feedback-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.feedback-note {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.8;
+  letter-spacing: 0.02em;
+}
+.feedback-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.feedback-primary {
+  padding: 11px 22px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.12s ease;
+  box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+:root[data-phase="night"] .feedback-primary { color: #1b1e1e; }
+.feedback-primary:hover { background: color-mix(in srgb, var(--accent) 86%, #fff); }
+.feedback-primary:active { transform: scale(0.98); }
+.feedback-primary:disabled { opacity: 0.6; cursor: default; }
+.feedback-ghost {
+  padding: 9px 16px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.feedback-ghost:hover { color: var(--fg); }
+
+.feedback-channels { display: flex; flex-direction: column; gap: 8px; }
+.feedback-channel {
+  display: block;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 300;
+  text-decoration: none;
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  transition: color 0.15s, border-color 0.15s;
+}
+.feedback-channel:hover { color: var(--accent); border-color: var(--accent); }
+
 /* ---------- Responsive: short viewports (landscape phones) ---------- */
 
 @media (max-height: 520px) {

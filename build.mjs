@@ -2,8 +2,12 @@
 // Usage: node build.mjs [--target=extension|web] [--watch]
 
 import { build, context } from "esbuild";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, rm, readFile } from "node:fs/promises";
 import { join, basename } from "node:path";
+
+// Single source of truth for the app version: the extension manifest. Inlined
+// into the bundle via `define` so feedback can stamp reports with it.
+const { version } = JSON.parse(await readFile("shell/manifest.json", "utf8"));
 
 const args = new Set(process.argv.slice(2));
 const watch = args.has("--watch");
@@ -50,6 +54,7 @@ async function buildOne(t) {
     minify: true,
     define: {
       "process.env.COVELY_TARGET": JSON.stringify(t.name),
+      "process.env.COVELY_VERSION": JSON.stringify(version),
     },
   };
 
