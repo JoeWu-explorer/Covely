@@ -1,11 +1,12 @@
-// Idea capture: a CodeMirror markdown editor backed by sessionStorage, with
-// copy-to-clipboard, clear, and a leave reminder. Intentionally ephemeral —
-// survives refresh, dies on tab close, forces export.
+// Idea capture: a CodeMirror markdown editor backed by persistent storage (localStorage
+// on web, chrome.storage.local on extension). Survives tab discard, browser crash, and
+// mobile eviction — content is auto-saved and restored on next visit.
 
 import { createEditor } from "../lib/editor.js";
 import { icon } from "../lib/icons.js";
+import * as storage from "../lib/storage.js";
 
-const SESSION_KEY = "covely.memo.draft";
+const KEY = "covely.memo.draft";
 
 /** @param {HTMLElement} container */
 export function mountMemo(container) {
@@ -16,22 +17,57 @@ export function mountMemo(container) {
   const editorEl = document.createElement("div");
   editorEl.className = "memo-editor";
 
+  // --- Debounced write-through ---
+  /** @type {ReturnType<typeof setTimeout>} */
+  let writeTimer = 0;
+
+  /** @param {string} value */
+  function flush(value) {
+    clearTimeout(writeTimer);
+    void storage.set(KEY, value);
+  }
+
+  /** @param {string} value */
+  function scheduleWrite(value) {
+    clearTimeout(writeTimer);
+    writeTimer = setTimeout(() => void storage.set(KEY, value), 400);
+  }
+
+  // Legacy sessionStorage draft (existing tab with a live draft before the upgrade).
+  const legacyDraft = sessionStorage.getItem(KEY) ?? "";
+
   const view = createEditor({
     parent: editorEl,
-    doc: sessionStorage.getItem(SESSION_KEY) ?? "",
+    doc: legacyDraft,
     placeholder: "记下冒出来的想法…（支持 Markdown）",
     ariaLabel: "灵感速记",
-    onChange: (value) => sessionStorage.setItem(SESSION_KEY, value),
+    onChange: scheduleWrite,
   });
 
-  const getText = () => view.state.doc.toString();
+  // Migrate legacy sessionStorage draft → persistent storage, then remove it.
+  if (legacyDraft) {
+    void storage.set(KEY, legacyDraft);
+    sessionStorage.removeItem(KEY);
+  } else {
+    // No legacy draft: load from persistent storage and insert if editor is still empty.
+    void storage.get(KEY).then((stored) => {
+      if (typeof stored === "string" && stored.length > 0 && view.state.doc.length === 0) {
+        view.dispatch({ changes: { from: 0, to: 0, insert: stored } });
+      }
+    });
+  }
+
+  // Flush on tab discard / background — beforeunload doesn't fire reliably on mobile.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) flush(view.state.doc.toString());
+  });
 
   const actions = document.createElement("div");
   actions.className = "memo-actions";
 
   const hint = document.createElement("span");
   hint.className = "memo-hint";
-  hint.textContent = "关页即清空，记得导出";
+  hint.textContent = "已自动保存在本机";
 
   const buttons = document.createElement("div");
   buttons.className = "memo-buttons";
@@ -56,6 +92,8 @@ export function mountMemo(container) {
   actions.append(hint, buttons);
   root.append(editorEl, actions);
   container.appendChild(root);
+
+  const getText = () => view.state.doc.toString();
 
   let resetTimer = 0;
   copyBtn.addEventListener("click", async () => {
@@ -93,16 +131,9 @@ export function mountMemo(container) {
     if (!getText().trim()) return;
     if (confirm("清空速记？未复制的内容会丢失。")) {
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: "" } });
-      sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(KEY);
+      void storage.remove(KEY);
       view.focus();
-    }
-  });
-
-  // beforeunload: warn if there's unsaved content.
-  window.addEventListener("beforeunload", (e) => {
-    if (getText().trim().length > 0) {
-      e.preventDefault();
-      e.returnValue = "";
     }
   });
 }

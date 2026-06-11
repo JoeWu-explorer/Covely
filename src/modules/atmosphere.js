@@ -9,6 +9,7 @@
 
 import * as storage from "../lib/storage.js";
 import { icon } from "../lib/icons.js";
+import { wirePopover } from "../lib/popover.js";
 
 const STORAGE_KEY = "covely.phase";
 
@@ -128,7 +129,7 @@ function buildControl(getPref, onPick) {
     item.addEventListener("click", () => {
       onPick(opt.key);
       sync();
-      close();
+      popover.close();
     });
     items.set(opt.key, item);
     menu.appendChild(item);
@@ -144,30 +145,7 @@ function buildControl(getPref, onPick) {
     }
     renderTrigger();
   }
-  function open() {
-    menu.hidden = false;
-    trigger.setAttribute("aria-expanded", "true");
-    document.addEventListener("pointerdown", onOutside, true);
-    document.addEventListener("keydown", onKey, true);
-  }
-  function close() {
-    menu.hidden = true;
-    trigger.setAttribute("aria-expanded", "false");
-    document.removeEventListener("pointerdown", onOutside, true);
-    document.removeEventListener("keydown", onKey, true);
-  }
-  /** @param {PointerEvent} e */
-  function onOutside(e) {
-    if (!root.contains(/** @type {Node} */ (e.target))) close();
-  }
-  /** @param {KeyboardEvent} e */
-  function onKey(e) {
-    if (e.key === "Escape") { close(); trigger.focus(); }
-  }
-
-  trigger.addEventListener("click", () => {
-    if (menu.hidden) open(); else close();
-  });
+  const popover = wirePopover({ root, trigger, menu });
 
   root.append(trigger, menu);
   sync();

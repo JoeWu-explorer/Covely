@@ -73,6 +73,11 @@ export function mountClock(container) {
 
   render();
   setInterval(render, 30_000);
+  // Catch up the moment the tab becomes visible again — background-tab timer
+  // throttling can stall the interval for minutes, leaving a stale clock.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) render();
+  });
 
   return root;
 }

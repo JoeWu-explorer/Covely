@@ -18,7 +18,12 @@ const clockSection = mountClock(app);
 mountQuote(clockSection); // encouraging line, tucked under the date
 void mountPomodoro(clockSection); // focus timer, tucked under the quote
 mountMemo(app);
-const noise = await mountNoise(app);
+// If the soundscape fails to mount, keep going — the modules below must not
+// disappear with it. mountWelcome degrades to a no-op preset.
+const noise = await mountNoise(app).catch((err) => {
+  console.error("[covely] mountNoise failed", err);
+  return { applyPreset: () => {} };
+});
 mountSearch(); // floating icon (top-left) + overlay — not part of the column
 mountFeedback(); // floating icon (bottom-right) + dialog — user-initiated, sends to dev
 void mountWelcome(noise); // first-visit greeting; offers to turn on the soundscape

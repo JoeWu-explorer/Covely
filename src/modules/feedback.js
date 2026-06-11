@@ -7,6 +7,7 @@
 
 import { icon } from "../lib/icons.js";
 import * as storage from "../lib/storage.js";
+import { dismissDialog } from "../lib/dialog.js";
 
 // --- Config — fill these in before shipping --------------------------------
 // Get an access key in ~10s at https://web3forms.com (enter your email, no
@@ -133,21 +134,7 @@ export function mountFeedback() {
       if (closed) return;
       closed = true;
       open = false;
-      scrim.classList.add("leaving");
-      card.classList.add("leaving");
-      const finish = () => {
-        scrim.remove();
-        card.remove();
-        trigger.focus();
-      };
-      card.addEventListener(
-        "animationend",
-        (e) => {
-          if (e.animationName === "welcome-out") finish();
-        },
-        { once: true },
-      );
-      setTimeout(finish, 700); // fallback (also covers reduced-motion)
+      dismissDialog({ scrim, card, onDone: () => trigger.focus() });
     }
 
     // --- Form ---
@@ -296,7 +283,10 @@ export function mountFeedback() {
       body.append(channels, wrap);
     }
 
+    let sending = false;
     async function submit() {
+      // In-flight guard — the Cmd/Ctrl+Enter path bypasses the disabled button.
+      if (sending) return;
       const message = textarea.value.trim();
       if (!message) {
         textarea.focus();
@@ -307,11 +297,14 @@ export function mountFeedback() {
         return;
       } // silently drop bots
 
+      sending = true;
       sendBtn.disabled = true;
       sendBtn.textContent = "发送中…";
       const ctx = await collectContext();
       const text = reportText(activeCat, message, ctx);
 
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
       try {
         // Submit as multipart FormData with NO custom headers — this is a CORS
         // "simple request", so the browser sends no OPTIONS preflight. (Web3Forms
@@ -326,14 +319,11 @@ export function mountFeedback() {
         form.append("category", activeCat.key);
         form.append("message", text);
 
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
         const res = await fetch(ENDPOINT, {
           method: "POST",
           body: form,
           signal: controller.signal,
         });
-        clearTimeout(timer);
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.success) {
           showDone("收到了，谢谢你 🌿", "你的每一条反馈我都会认真看。");
@@ -343,6 +333,9 @@ export function mountFeedback() {
       } catch (err) {
         console.warn("[feedback] submit failed, using fallback", err);
         await showFallback(text);
+      } finally {
+        clearTimeout(timer);
+        sending = false;
       }
     }
 

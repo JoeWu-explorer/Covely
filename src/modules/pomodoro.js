@@ -6,7 +6,7 @@
 // gives a threefold, gentle nudge: a synthesized chime, a soft card flash, and
 // a system Notification. Settings + today's tally persist locally.
 
-import { getAudioContext } from "../lib/audio.js";
+import { getAudioContext, ensureAudioContext } from "../lib/audio.js";
 import * as storage from "../lib/storage.js";
 import { icon } from "../lib/icons.js";
 
@@ -43,9 +43,9 @@ function todayStr() {
  * A gentle two-note bell, synthesized so we ship no extra audio asset. Played
  * through the shared AudioContext (already resumed by the start gesture).
  */
-function chime() {
+async function chime() {
   try {
-    const ac = getAudioContext();
+    const ac = await ensureAudioContext();
     const now = ac.currentTime;
     [880, 1318.5].forEach((freq, i) => {
       const osc = ac.createOscillator();
@@ -274,7 +274,7 @@ export async function mountPomodoro(parent) {
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
       try { Notification.requestPermission(); } catch {}
     }
-    getAudioContext(); // unlock audio within this gesture so the later chime plays
+    void ensureAudioContext(); // unlock audio within this gesture so the later chime plays
     if (remainingMs <= 0) remainingMs = durMs(phase);
     endAt = Date.now() + remainingMs;
     status = "running";
@@ -365,7 +365,17 @@ export async function mountPomodoro(parent) {
   });
   playBtn.addEventListener("click", () => (status === "running" ? pause() : start()));
   resetBtn.addEventListener("click", reset);
-  skipBtn.addEventListener("click", () => complete(false));
+  skipBtn.addEventListener("click", () => {
+    if (status === "idle") {
+      // Skipping while idle moves to the next phase but must not auto-start it.
+      advance(false);
+      status = "idle";
+      saveSession();
+      render();
+    } else {
+      complete(false);
+    }
+  });
   gearBtn.addEventListener("click", () => panel.classList.toggle("show-settings"));
 
   for (const key in inputs) {
@@ -398,10 +408,14 @@ export async function mountPomodoro(parent) {
   if (td && td.date === todayStr()) count = td.count;
 
   const sess = /** @type {any} */ (await storage.get(SESSION_KEY));
-  if (sess && (sess.status === "running" || sess.status === "paused")) {
-    phase = sess.phase;
-    focusDone = sess.focusDone ?? 0;
-    if (sess.status === "running" && sess.endAt > Date.now()) {
+  // A session with an unknown phase is corrupt — discard it entirely.
+  const sessPhaseValid = sess && Object.prototype.hasOwnProperty.call(PHASE_META, sess.phase);
+  if (sess && (sess.status === "running" || sess.status === "paused") && sessPhaseValid) {
+    phase = /** @type {Phase} */ (sess.phase);
+    focusDone = Number.isFinite(sess.focusDone) && sess.focusDone >= 0
+      ? Math.floor(sess.focusDone)
+      : 0;
+    if (sess.status === "running" && Number.isFinite(sess.endAt) && sess.endAt > Date.now()) {
       // Still mid-phase: resume the live countdown.
       endAt = sess.endAt;
       remainingMs = endAt - Date.now();
@@ -411,8 +425,12 @@ export async function mountPomodoro(parent) {
       // Phase elapsed while the page was closed: settle it once, then wait.
       advance(true);
       status = "paused";
+      saveSession(); // persist so subsequent tab opens don't re-run advance
     } else {
-      remainingMs = sess.remainingMs ?? durMs(phase);
+      // paused: only trust remainingMs if it's a finite positive number
+      remainingMs = Number.isFinite(sess.remainingMs) && sess.remainingMs > 0
+        ? sess.remainingMs
+        : durMs(phase);
       status = "paused";
     }
     root.classList.add("open");

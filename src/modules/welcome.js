@@ -2,6 +2,8 @@
 // a fresh line, has a small moment with them, and offers to turn on a curated
 // soundscape. The greeting is picked at random each load so it never feels stale.
 
+import { dismissDialog } from "../lib/dialog.js";
+
 /** @type {ReadonlyArray<{ title: string, lead: string }>} */
 const GREETINGS = [
   { title: "很高兴遇见你", lead: "这里是 Covely —— 一处让你慢下来、安静做事的小角落。" },
@@ -82,18 +84,7 @@ export function mountWelcome(noise) {
   function close() {
     if (closed) return;
     closed = true;
-    scrim.classList.add("leaving");
-    card.classList.add("leaving");
-    const finish = () => {
-      scrim.remove();
-      card.remove();
-    };
-    card.addEventListener(
-      "animationend",
-      (e) => { if (e.animationName === "welcome-out") finish(); },
-      { once: true },
-    );
-    setTimeout(finish, 700); // fallback (also covers reduced-motion)
+    dismissDialog({ scrim, card });
   }
 
   yes.addEventListener("click", () => {

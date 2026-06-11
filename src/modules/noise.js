@@ -1,8 +1,9 @@
 // Sound module: file-based playback with looping + variant switching.
-// 3 slots (rain / fire / music). Rain and fire have 3 variants each; music has 1.
+// Slot definitions (IDs, variant counts, labels) live in SLOTS below.
 // Files live under assets/sounds/ and are loaded on first play via decodeAudioData.
 
-import { getAudioContext } from "../lib/audio.js";
+import { getAudioContext, ensureAudioContext } from "../lib/audio.js";
+import { wirePopover } from "../lib/popover.js";
 import * as storage from "../lib/storage.js";
 import { icon } from "../lib/icons.js";
 
@@ -63,6 +64,9 @@ function loadBuffer(ac, url) {
       })
       .then((ab) => ac.decodeAudioData(ab));
     bufferCache.set(url, promise);
+    // Evict on failure so the slot isn't permanently dead — a later attempt
+    // will fetch again. Guard avoids evicting a newer in-flight entry.
+    promise.catch(() => { if (bufferCache.get(url) === promise) bufferCache.delete(url); });
   }
   return promise;
 }
@@ -86,22 +90,43 @@ function createSlot(slotId) {
   let generation = 0;
 
   function teardown() {
-    if (source) {
-      try { source.stop(); } catch {}
-      try { source.disconnect(); } catch {}
-    }
-    if (gain) {
-      try { gain.disconnect(); } catch {}
-    }
+    // Fade out over ~0.2 s, then stop. Capture locally so a quick re-start
+    // can create fresh nodes immediately without fighting the dying ones.
+    const dyingSrc = source;
+    const dyingGain = gain;
     source = null;
     gain = null;
+    if (dyingGain && dyingSrc) {
+      const ac = getAudioContext();
+      const now = ac.currentTime;
+      try {
+        // Latch the current value before cancelling: cancelScheduledValues
+        // rewinds an in-flight fade-in ramp to its 0 start point (audible cut).
+        const cur = dyingGain.gain.value;
+        dyingGain.gain.cancelScheduledValues(now);
+        dyingGain.gain.setValueAtTime(cur, now);
+        dyingGain.gain.setTargetAtTime(0, now, 0.05);
+        dyingSrc.stop(now + 0.35);
+        dyingSrc.addEventListener("ended", () => {
+          try { dyingSrc.disconnect(); } catch {}
+          try { dyingGain.disconnect(); } catch {}
+        }, { once: true });
+      } catch {
+        try { dyingSrc.stop(); } catch {}
+        try { dyingSrc.disconnect(); } catch {}
+        try { dyingGain.disconnect(); } catch {}
+      }
+    }
   }
 
+  /**
+   * @returns {Promise<boolean>} true on success (or superseded); false on load failure.
+   */
   async function start() {
-    if (running) return;
+    if (running) return true;
     running = true;
     const myGen = ++generation;
-    const ac = getAudioContext();
+    const ac = await ensureAudioContext(); // wait for live clock before scheduling
     const url = `${ASSETS}/${slotId}-${variant}.mp3`;
     let buf;
     try {
@@ -109,18 +134,23 @@ function createSlot(slotId) {
     } catch (err) {
       console.error("[noise] load failed", url, err);
       running = false;
-      return;
+      return false;
     }
-    if (myGen !== generation || !running) return; // got stopped / changed mid-load
+    // Superseded by a newer start()/stop() — treat as success so caller doesn't rollback.
+    if (myGen !== generation || !running) return true;
     const src = ac.createBufferSource();
     src.buffer = buf;
     src.loop = true;
     const g = ac.createGain();
-    g.gain.value = volume;
+    const now = ac.currentTime;
+    // Fade in: start silent, ramp to target volume over ~0.25 s.
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(volume, now + 0.25);
     src.connect(g).connect(ac.destination);
     src.start();
     source = src;
     gain = g;
+    return true;
   }
 
   function stop() {
@@ -140,15 +170,17 @@ function createSlot(slotId) {
 
   /**
    * @param {number} n 1-based variant index
+   * @returns {Promise<boolean>} true on success; false on load failure (only when was running).
    */
-  function setVariant(n) {
-    if (n === variant) return;
+  async function setVariant(n) {
+    if (n === variant) return true;
     variant = n;
     if (running) {
       teardown();
       running = false;
-      void start();
+      return start();
     }
+    return true;
   }
 
   return {
@@ -247,7 +279,15 @@ export async function mountNoise(container) {
     /** @param {number} v 1-based variant */
     function setVariant(v) {
       state.variant = v;
-      sound.setVariant(v);
+      // Restart on the new variant. If the slot is enabled but silent (a prior
+      // load failed), this pick doubles as the retry — the failure may have
+      // been specific to one file. Roll the card back if it still won't play.
+      void sound
+        .setVariant(v)
+        .then((ok) => (ok && state.enabled && !sound.running ? sound.start() : ok))
+        .then((ok) => {
+          if (!ok) rollbackEnabled();
+        });
       picker?.sync();
     }
     /** @param {number} v 0–100 */
@@ -257,13 +297,21 @@ export async function mountNoise(container) {
       sound.setVolume(v / 100);
       state.volume = v;
     }
+    /** Roll back the card to off when a load failure leaves it lit with no sound. */
+    function rollbackEnabled() {
+      card.classList.remove("on");
+      state.enabled = false;
+      void save();
+    }
     /** @param {boolean} on @param {{ play?: boolean }} [opts] */
     function setEnabled(on, opts) {
       if (on) {
         card.classList.add("on");
         state.enabled = true;
         sound.setVolume(Number(slider.value) / 100);
-        if (opts?.play !== false) void sound.start();
+        if (opts?.play !== false) {
+          sound.start().then((ok) => { if (!ok) rollbackEnabled(); });
+        }
       } else {
         sound.stop();
         card.classList.remove("on");
@@ -340,6 +388,12 @@ function createPicker(opts) {
   menu.setAttribute("role", "menu");
   menu.hidden = true;
 
+  root.append(trigger, menu);
+
+  // Delegate all open/close/outside-click/Escape/trigger-toggle wiring to the
+  // shared helper; get back close() so menu items can call it.
+  const { close } = wirePopover({ root, trigger, menu });
+
   /** @type {HTMLButtonElement[]} */
   const items = [];
   opts.names.forEach((name, i) => {
@@ -361,32 +415,7 @@ function createPicker(opts) {
     labelEl.textContent = opts.names[cur - 1] ?? opts.names[0];
     items.forEach((el, i) => el.setAttribute("aria-checked", String(i + 1 === cur)));
   }
-  function open() {
-    menu.hidden = false;
-    trigger.setAttribute("aria-expanded", "true");
-    document.addEventListener("pointerdown", onOutside, true);
-    document.addEventListener("keydown", onKey, true);
-  }
-  function close() {
-    menu.hidden = true;
-    trigger.setAttribute("aria-expanded", "false");
-    document.removeEventListener("pointerdown", onOutside, true);
-    document.removeEventListener("keydown", onKey, true);
-  }
-  /** @param {PointerEvent} e */
-  function onOutside(e) {
-    if (!root.contains(/** @type {Node} */ (e.target))) close();
-  }
-  /** @param {KeyboardEvent} e */
-  function onKey(e) {
-    if (e.key === "Escape") { close(); trigger.focus(); }
-  }
 
-  trigger.addEventListener("click", () => {
-    if (menu.hidden) open(); else close();
-  });
-
-  root.append(trigger, menu);
   sync();
   return { root, sync };
 }
